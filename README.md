@@ -178,7 +178,7 @@ Both parties can decrypt and view records via MetaMask
 Download this project as a zip and extract it, or clone it:
 
 ```bash
-git clone <your-repo>
+git clone <This-webpage>
 cd MedicalRecordSystem
 ```
 
