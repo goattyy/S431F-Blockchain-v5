@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PatientRegistry DApp (Encrypted)</title>
+  <link rel="stylesheet" href="./style.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <script src="https://unpkg.com/@metamask/eth-sig-util/dist/browser.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl-fast.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>PatientRegistry</h1>
+        <p class="muted small-print">Secure Encrypted DApp</p>
+      </div>
+
+      <section class="card" id="walletSection">
+        <h2>Wallet &amp; Contracts</h2>
+        <div class="row_single">
+          <label for="contractAddress">PatientRegistry contract</label>
+          <input id="contractAddress" type="text" placeholder="0x… PatientRegistry" />
+        </div>
+        <div class="row_single">
+          <label for="doctorRegistryAddress">DoctorRegistry contract</label>
+          <input id="doctorRegistryAddress" type="text" placeholder="0x… DoctorRegistry" />
+        </div>
+        <div class="row_single">
+          <button id="connectBtn" type="button">Connect MetaMask</button>
+          <div class="status-indicators">
+            <span id="accountLabel" class="muted small-print">Not connected</span>
+            <span id="networkLabel" class="muted small-print"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="roleSelectPanel">
+        <h2>Role Selection</h2>
+        <div class="row role-choice-row">
+          <button id="choosePatientBtn" type="button" class="role-btn patient-role-btn">Patient</button>
+          <button id="chooseDoctorBtn" type="button" class="role-btn doctor-role-btn">Doctor</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>System Status</h2>
+        <div id="status" class="muted small-print">Waiting for connection...</div>
+      </section>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- PATIENT -->
+      <section class="role-section patient-role-section" id="patientPanel" data-role-flow="patient">
+        <header class="role-section-header">
+          <span class="role-badge patient-badge">Patient</span>
+          <h2>Patient Workspace</h2>
+        </header>
+
+        <details class="card collapsible" open>
+          <summary>Encrypted Personal Profile</summary>
+          <div class="patient-profile-fields">
+            <div class="row two">
+              <div><label for="p_name">Name</label><input id="p_name" type="text" placeholder="Chris Wong" /></div>
+              <div><label for="p_idCard">ID Card</label><input id="p_idCard" type="text" placeholder="X-123456-7" /></div>
+            </div>
+
+            <div class="row two">
+              <div><label for="p_birthDay">Birth day</label><input id="p_birthDay" type="date" /></div>
+              <div>
+                <label>Gender</label>
+                <div class="row_gender">
+                  <input id="p_gender_m" type="radio" name="p_gender" value="Male" />
+                  <label for="p_gender_m">Male</label>
+                  <input id="p_gender_f" type="radio" name="p_gender" value="Female" />
+                  <label for="p_gender_f">Female</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row two">
+              <div><label for="p_homeAddress">Home Address</label><input id="p_homeAddress" type="text" /></div>
+              <div><label for="p_phoneNumber">Phone Number</label><input id="p_phoneNumber" type="tel" placeholder="1234-5678" /></div>
+            </div>
+
+            <div class="row three">
+              <div><label for="p_age">Age</label><input id="p_age" type="number" /></div>
+              <div><label for="p_weight">Weight (kg)</label><input id="p_weight" type="number" /></div>
+              <div><label for="p_height">Height (cm)</label><input id="p_height" type="number" /></div>
+            </div>
+
+            <!-- app.js 真正會用 -->
+            <div class="row_single">
+              <label for="patientDoctorAddress">Doctor wallet for profile sharing / authorization</label>
+              <input id="patientDoctorAddress" type="text" placeholder="0x..." />
+            </div>
+            <div class="row_single">
+              <label for="recordPatientEncryptionPubKey">Doctor encryption public key</label>
+              <textarea id="recordPatientEncryptionPubKey" rows="2"></textarea>
+            </div>
+
+            <!-- legacy ids keep -->
+            <div class="row_single" style="display:none;">
+              <label for="profileDoctorAddressForShare">Profile Share Doctor Address</label>
+              <input id="profileDoctorAddressForShare" type="text" placeholder="0x..." />
+            </div>
+            <div class="row_single" style="display:none;">
+              <label for="profileDoctorEncryptionPubKeyForShare">Profile Share Doctor Public Key</label>
+              <textarea id="profileDoctorEncryptionPubKeyForShare" rows="2"></textarea>
+            </div>
+
+            <div class="action-footer-row">
+              <div id="patientOnboarding" class="state-panel state-not-registered">
+                <button id="registerPatientBtn" type="button" class="primary-action">Register as Patient</button>
+              </div>
+              <div class="state-panel state-registered">
+                <button id="updateProfileBtn" type="button">Update Encrypted Profile</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div id="patientEncryptionPubKeyPanel" class="card inner-card dashed-border">
+          <h3>Share Your Encryption Key</h3>
+          <button id="showEncryptionPubKeyBtn" type="button" class="secondary">Show my encryption public key</button>
+          <pre id="encryptionPubKeyOutput" class="output"></pre>
+        </div>
+
+        <div id="patientDashboard" class="state-panel state-registered">
+          <details class="card collapsible">
+            <summary>Doctor Authorization</summary>
+            <button id="loadRegisteredDoctorsBtn" type="button">Find registered doctors</button>
+            <div id="registeredDoctorsList" class="output"></div>
+
+            <div class="row">
+              <label for="patientDoctorAddress">Doctor wallet</label>
+              <input id="patientDoctorAddress_clone" type="text" placeholder="Use the field above" disabled />
+            </div>
+
+            <div class="row">
+              <label for="patientDoctorAuthorized">Authorized</label>
+              <select id="patientDoctorAuthorized">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+            </div>
+            <button id="authorizeDoctorBtn" type="button">Apply authorization</button>
+          </details>
+
+          <details class="card collapsible">
+            <summary>Appointments & Coins</summary>
+            <h4>New Appointment</h4>
+            <div class="row_single">
+              <label for="apptDoctorAddress">Doctor address</label>
+              <input id="apptDoctorAddress" type="text" />
+            </div>
+            <div class="row two">
+              <div><label for="apptScheduledAt">Time</label><input id="apptScheduledAt" type="datetime-local" /></div>
+              <div><label for="apptFee">Fee</label><input id="apptFee" type="number" /></div>
+            </div>
+            <div class="row_single">
+              <label for="apptReason">Reason</label>
+              <input id="apptReason" type="text" />
+            </div>
+            <button id="btnCreateAppointment" type="button">Create appointment</button>
+
+            <div style="display:none;">
+              <hr class="section-rule" />
+              <h4>Query Appointment</h4>
+              <div class="row two">
+                <input id="queryAppointmentId" type="number" placeholder="ID" />
+                <button id="btnQueryAppointment" type="button">Load</button>
+              </div>
+              <pre id="appointmentOutput" class="output"></pre>
+            </div>
+
+            <hr class="section-rule" />
+            <h4>Coins</h4>
+            <div class="row two">
+              <div>
+                <label for="grantPatientAddress">Patient address</label>
+                <input id="grantPatientAddress" type="text" placeholder="0x... patient" />
+              </div>
+              <div>
+                <label for="grantAmount">Amount</label>
+                <input id="grantAmount" type="number" placeholder="Amount" />
+              </div>
+            </div>
+            <div class="row">
+              <button id="btnGrantCoins" type="button">Grant Initial Coins</button>
+              <button id="btnLoadMyBalance" type="button" class="secondary">Check Balance</button>
+            </div>
+            <pre id="myBalanceOutput" class="output"></pre>
+          </details>
+        </div>
+      </section>
+
+      <!-- DOCTOR -->
+      <section class="card role-section doctor-role-section" id="doctorPanel" data-role-flow="doctor">
+        <header class="role-section-header">
+          <span class="role-badge doctor-badge">Doctor</span>
+          <h2>Doctor Workspace</h2>
+        </header>
+
+        <details class="card collapsible" open>
+          <summary>Doctor Profile (DoctorRegistry)</summary>
+          <div class="doctor-profile-fields">
+            <div class="row two">
+              <div><label for="d_name">Name</label><input id="d_name" type="text" /></div>
+              <div><label for="d_affiliates">Hospital / Affiliates</label><input id="d_affiliates" type="text" /></div>
+            </div>
+            <div class="row two">
+              <div><label for="d_license">License</label><input id="d_license" type="text" /></div>
+              <div><label for="d_special">Specialties</label><input id="d_special" type="text" /></div>
+            </div>
+            <div class="row two">
+              <div><label for="d_num">Phone</label><input id="d_num" type="tel" /></div>
+              <div><label for="d_publicKey">Doctor encryption public key</label><textarea id="d_publicKey" rows="2"></textarea></div>
+            </div>
+
+            <!-- keep legacy ids -->
+            <div style="display:none;">
+              <input id="d_education" type="text" />
+              <input id="d_title" type="text" />
+              <input id="d_gender_m" type="radio" name="d_gender" value="Male" />
+              <input id="d_gender_f" type="radio" name="d_gender" value="Female" />
+            </div>
+
+            <div class="action-footer-row">
+              <div id="doctorOnboarding" class="state-panel state-not-registered">
+                <button id="registerDoctorBtn" type="button" class="primary-action">Register as Doctor</button>
+              </div>
+              <div class="state-panel state-registered">
+                <button id="updateDoctorProfileBtn" type="button">Update Doctor Profile</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div id="doctorDashboard" class="state-panel state-registered">
+          <details class="card collapsible">
+            <summary>Doctor Tools & Patients</summary>
+            <div class="row">
+              <label for="doctorProfileReadAddress">Doctor Address</label>
+              <input id="doctorProfileReadAddress" type="text" placeholder="Defaults to self" />
+            </div>
+            <button id="getMyProfileDoctorBtn" type="button">Load My On-Chain Profile</button>
+            <pre id="profileOutput_D" class="output"></pre>
+
+            <hr class="section-rule" />
+            <button id="loadAuthorizedPatientsBtn" type="button">Refresh authorized patient list</button>
+            <div id="authorizedPatientsList" class="output"></div>
+          </details>
+
+          <details class="card collapsible" open>
+            <summary>Appointment Management & Settlement</summary>
+
+            <button id="btnLoadDoctorAppointments" type="button">Load appointment IDs</button>
+            <div id="doctorAppointmentIdsOutput" class="output"></div>
+
+            <div class="row two">
+              <div>
+                <label for="doctorAppointmentId">Appointment ID</label>
+                <input id="doctorAppointmentId" type="number" placeholder="ID" />
+              </div>
+              <div>
+                <label>&nbsp;</label>
+                <div class="row">
+                  <button id="btnApproveAppointment" type="button">Approve</button>
+                  <button id="btnRejectAppointment" type="button">Reject</button>
+                </div>
+              </div>
+            </div>
+
+            <hr class="section-rule" />
+
+            <h4>Final Settlement + Add Medical Record</h4>
+            <p class="muted small-print">
+              Use the same approved Appointment ID here. When you click the button below, the current app flow will complete the appointment, settle payment, and add the medical record in one step.
+            </p>
+
+            <div class="row_single">
+              <label for="recordPatientAddress">Patient address</label>
+              <input id="recordPatientAddress" type="text" />
+            </div>
+
+            <div class="row_single">
+              <label for="recordPatientEncryptionPubKey">Patient public key</label>
+              <textarea id="recordPatientEncryptionPubKey" rows="2"></textarea>
+            </div>
+
+            <div class="row_single">
+              <label for="recordD">Diagnosis</label>
+              <textarea id="recordD" rows="3"></textarea>
+            </div>
+
+            <div class="row_single">
+              <label for="recordP">Prescription</label>
+              <textarea id="recordP" rows="3"></textarea>
+            </div>
+
+            <div class="row_single">
+              <label for="recordN">Notes</label>
+              <textarea id="recordN" rows="3"></textarea>
+            </div>
+
+            <button id="addMedicalRecordBtn" type="button" class="primary-action">
+              Complete + Settle + Add Medical Record
+            </button>
+
+            <!-- keep old ids hidden so you do not lose them -->
+            <div style="display:none;">
+              <input id="recordAppointmentId" type="number" />
+              <textarea id="patientPublicKey" rows="2"></textarea>
+              <textarea id="recordPlaintext" rows="3"></textarea>
+              <button id="btnCompleteAppointmentRecord" type="button">Complete + Settle + Add Record</button>
+            </div>
+          </details>
+
+          <details class="card collapsible">
+            <summary>Allergies (Write)</summary>
+            <div class="row_single">
+              <label for="allergyPatientAddressDr">Patient address</label>
+              <input id="allergyPatientAddressDr" type="text" />
+            </div>
+            <div class="row_single">
+              <label for="allergyPatientEncryptionPubKeyDr">Patient public key</label>
+              <textarea id="allergyPatientEncryptionPubKeyDr" rows="2"></textarea>
+            </div>
+            <div class="row_single">
+              <label for="allergyAllergenDr">Allergen</label>
+              <input id="allergyAllergenDr" type="text" />
+            </div>
+            <div class="row two">
+              <div><label for="allergySeverityDr">Severity</label><input id="allergySeverityDr" type="text" /></div>
+              <div><label for="allergyReactionDr">Reaction</label><input id="allergyReactionDr" type="text" /></div>
+            </div>
+            <button id="addAllergyViaDoctorRegistryBtn" type="button">Add allergy (DoctorRegistry)</button>
+          </details>
+        </div>
+      </section>
+
+      <!-- SHARED -->
+      <section class="card role-section clinical-shared-section" id="clinicalSharedSection">
+        <header class="role-section-header">
+          <span class="role-badge clinical-badge">Clinical Explorer</span>
+          <h2>Profiles, Records & Allergies (Read)</h2>
+        </header>
+
+        <details class="card collapsible" open>
+          <summary>Data Decryption Tools</summary>
+
+          <div class="row_single">
+            <label for="profileReadPatientAddress">Patient address for profile decryption</label>
+            <input id="profileReadPatientAddress" type="text" />
+          </div>
+
+          <div class="row_single">
+            <label for="readPatientAddress">Patient address for records / allergies</label>
+            <input id="readPatientAddress" type="text" />
+          </div>
+
+          <div class="row_single" style="display:none;">
+            <label for="allergyReadPatientAddress">Patient address for allergies</label>
+            <input id="allergyReadPatientAddress" type="text" />
+          </div>
+
+          <div class="button-group row">
+            <button id="getMyProfilePatientBtn" type="button">Decrypt profile</button>
+            <button id="getMedicalRecordsBtn" type="button">Decrypt records</button>
+            <button id="getAllergiesBtn" type="button">Decrypt allergies</button>
+          </div>
+
+          <pre id="profileOutput_P" class="output"></pre>
+          <pre id="recordsOutput" class="output"></pre>
+          <pre id="allergiesOutput" class="output"></pre>
+        </details>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

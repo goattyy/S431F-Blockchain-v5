@@ -1,0 +1,175 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --sidebar-width: 320px;
+  --bg-color: #f3f4f6;
+  --card-bg: #ffffff;
+  --primary-patient: #0369a1;
+  --primary-doctor: #7c3aed;
+  --primary-clinical: #0d9488;
+  --border-color: #e5e7eb;
+}
+
+/* BASE STYLES */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-color);
+  color: #111827;
+  overflow: hidden;
+}
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: var(--sidebar-width);
+  background: #ffffff;
+  border-right: 1px solid var(--border-color);
+  padding: 24px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.brand h1 { 
+  font-size: 1.4rem; 
+  margin: 0; 
+  color: var(--primary-doctor); 
+}
+
+/* MAIN CONTENT */
+.main-content {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* COLLAPSIBLE DETAILS */
+.collapsible summary {
+  list-style: none;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.collapsible summary::after { content: "▼"; font-size: 0.8rem; color: #9ca3af; }
+.collapsible[open] summary::after { content: "▲"; }
+
+/* FORMS & LAYOUT */
+.row { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
+.row.two > div, .row.three > div { flex: 1; }
+.row_single { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; }
+
+/* Gender Radio Alignment */
+.row_gender { display: flex; align-items: center; gap: 12px; margin-top: 5px; }
+.row_gender input { width: auto; }
+.row_gender label { font-weight: 400; margin-right: 8px; }
+
+label { font-size: 0.85rem; font-weight: 600; color: #4b5563; }
+input, select, textarea {
+  width: 100%; 
+  padding: 10px; 
+  border: 1px solid var(--border-color);
+  border-radius: 8px; 
+  font-size: 0.95rem; 
+  box-sizing: border-box;
+}
+
+/* BUTTONS */
+button {
+  padding: 10px 16px; 
+  border-radius: 8px; 
+  border: none;
+  background: #111827; 
+  color: white; 
+  cursor: pointer; 
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+button:hover { opacity: 0.9; }
+button.secondary { 
+  background: #f3f4f6; 
+  color: #111827; 
+  border: 1px solid var(--border-color); 
+}
+.primary-action { background: var(--primary-doctor); }
+
+/* HORIZONTAL ACTION ROW (PROFILE BOTTOM) */
+.action-footer-row {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+
+.action-footer-row .state-panel { 
+  flex: 1; 
+}
+
+.action-footer-row button {
+  width: 100%;
+  padding: 14px;
+  font-weight: 600;
+}
+
+/* OUTPUT & BADGES */
+.output {
+  background: #0f172a; 
+  color: #10b981; 
+  padding: 12px;
+  border-radius: 8px; 
+  font-family: monospace; 
+  font-size: 0.85rem; 
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.role-badge {
+  padding: 4px 10px; 
+  border-radius: 999px; 
+  color: white; 
+  font-size: 0.7rem; 
+  font-weight: 700;
+}
+.patient-badge { background: var(--primary-patient); }
+.doctor-badge { background: var(--primary-doctor); }
+.clinical-badge { background: var(--primary-clinical); }
+
+/* SECTION INDICATORS */
+.patient-role-section { border-left: 5px solid var(--primary-patient); }
+.doctor-role-section { border-left: 5px solid var(--primary-doctor); }
+.clinical-shared-section { border-left: 5px solid var(--primary-clinical); }
+
+.dashed-border { 
+  border: 2px dashed #cbd5e1 !important; 
+  background: #f9fafb !important; 
+}
+
+/* RESPONSIVENESS */
+@media (max-width: 1024px) {
+  .app-layout { flex-direction: column; overflow: auto; }
+  .sidebar { 
+    width: 100%; 
+    border-right: none; 
+    border-bottom: 1px solid var(--border-color); 
+    height: auto; 
+  }
+  body { overflow: auto; }
+}
